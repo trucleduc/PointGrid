@@ -15,11 +15,11 @@
 
 If you find this code useful, please cite our work at <br />
 <pre>
-@article{PointGrid, <br />
-	author = {Truc Le and Ye Duan}, <br />
-	titile = {{PointGrid}: A Deep Network for 3D Shape Understanding}, <br />
-	journal = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, <br />
-	month = {June}, <br />
-	year = {2018}, <br />
-} <br />
+@article{PointGrid,
+	author = {Truc Le and Ye Duan},
+	titile = {{PointGrid}: A Deep Network for 3D Shape Understanding},
+	journal = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+	month = {June},
+	year = {2018},
+}
 </pre>
