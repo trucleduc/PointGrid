@@ -118,9 +118,9 @@ def printout(flog, data):
 
 def placeholder_inputs():
     pointgrid_ph = tf.placeholder(tf.float32, shape=(batch_size, model.N, model.N, model.N, model.NUM_FEATURES))
-    label_ph = tf.placeholder(tf.float32, shape=(batch_size, model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART))
-    class_weight_ph = tf.placeholder(tf.float32, shape=(model.NUM_SEG_PART))
-    return pointgrid_ph, label_ph, class_weight_ph
+    cat_label_ph = tf.placeholder(tf.float32, shape=(batch_size, model.NUM_CATEGORY))
+    seg_label_ph = tf.placeholder(tf.float32, shape=(batch_size, model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART))
+    return pointgrid_ph, cat_label_ph, seg_label_ph
 
 def integer_label_to_one_hot_label(integer_label):
     one_hot_label = np.zeros((integer_label.shape[0], model.NUM_SEG_PART))
@@ -150,11 +150,11 @@ def predict():
     is_training = False
     
     with tf.device('/gpu:'+str(gpu_to_use)):
-        pointgrid_ph, label_ph, class_weight_ph = placeholder_inputs()
+        pointgrid_ph, cat_label_ph, seg_label_ph = placeholder_inputs()
         is_training_ph = tf.placeholder(tf.bool, shape=())
 
         # model
-        pred_label = model.get_model(pointgrid_ph, is_training=is_training_ph)
+        pred_cat, pred_seg = model.get_model(pointgrid_ph, is_training=is_training_ph)
 
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
@@ -180,31 +180,41 @@ def predict():
         if not os.path.exists('../data/ShapeNet/test-PointGrid'):
             os.mkdir('../data/ShapeNet/test-PointGrid')
         
-        num_obj_seen = np.zeros((model.NUM_CATEGORY), dtype=np.int32)
+        avg_cat_accuracy = 0.0
+        cat_accuracy = np.zeros((model.NUM_CATEGORY), dtype=np.float32)
+        cat_obj = np.zeros((model.NUM_CATEGORY), dtype=np.int32)
+        avg_iou = 0.0
+        cat_iou = np.zeros((model.NUM_CATEGORY), dtype=np.float32)
         for loop in range(len(TESTING_FILE_LIST)):
             mat_content = scipy.io.loadmat('../data/ShapeNet/test/' + TESTING_FILE_LIST[loop] + '.mat')
             pc = mat_content['points']
             labels = mat_content['labels']
             category = mat_content['category'][0][0]
-            if (num_obj_seen[int(category)] >= 3):
+            cat_label = model.integer_label_to_one_hot_label(category)
+            category = int(category)
+            if (cat_obj[category] >= 3):
                 continue
-            num_obj_seen[int(category)] += 1
-            one_hot_label = integer_label_to_one_hot_label(labels)
-            pointgrid, label, index, _ = model.pc2voxel(pc, one_hot_label)
+            cat_obj[category] += 1
+            seg_label = integer_label_to_one_hot_label(labels)
+            pointgrid, pointgrid_label, index, _ = model.pc2voxel(pc, seg_label)
             pointgrid = np.expand_dims(pointgrid, axis=0)
-            label = np.expand_dims(label, axis=0)
+            pointgrid_label = np.expand_dims(pointgrid_label, axis=0)
             feed_dict = {
                          pointgrid_ph: pointgrid,
-                         label_ph: label,
+                         cat_label_ph: cat_label,
+                         seg_label_ph: pointgrid_label,
                          is_training_ph: is_training,
                         }
-            label_val = sess.run(pred_label, feed_dict = feed_dict)
-            label_val = label_val[0, :, :, :, :, :]
-            point_label = model.populateOneHotSegLabel(pc, label_val, index)
+            pred_cat_val, pred_seg_val = sess.run([pred_cat, pred_seg], feed_dict = feed_dict)
+            pred_cat_val = np.argmax(pred_cat_val[0, :], axis=0)
+            pred_seg_val = pred_seg_val[0, :, :, :, :, :]
+            avg_cat_accuracy += (pred_cat_val == category)
+            cat_accuracy[category] += (pred_cat_val == category)
+            pred_point_label = model.populateOneHotSegLabel(pc, pred_seg_val, index)
             purify = True
             knn = 5
             if purify == True:
-                pre_label = point_label
+                pre_label = pred_point_label
                 for i in range(pc.shape[0]):
                     idx = np.argsort(np.sum((pc[i, :] - pc) ** 2, axis=1))
                     j, L = 0, []
@@ -215,11 +225,24 @@ def predict():
                         j += 1
                     majority = max(set(L), key=L.count)
                     if (pre_label[i] == 0 or len(set(L)) == 1):
-                        point_label[i] = majority
+                        pred_point_label[i] = majority
+            iou = model.intersection_over_union(pred_point_label, labels)
+            avg_iou += iou
+            cat_iou[category] += iou
 
-            output_color_point_cloud(pc, point_label, '../data/ShapeNet/test-PointGrid/' + category2name[int(category)] + '_' + str(num_obj_seen[int(category)]) + '.obj')
+            output_color_point_cloud(pc, pred_point_label, '../data/ShapeNet/test-PointGrid/' + category2name[category] + '_' + str(cat_obj[category]) + '.obj')
             printout(flog, '%d/%d %s' % ((loop+1), len(TESTING_FILE_LIST), TESTING_FILE_LIST[loop]))
             printout(flog, '----------')
+
+        avg_cat_accuracy /= float(np.sum(cat_obj))
+        avg_iou /= float(np.sum(cat_obj))
+        printout(flog, 'Average classification accuracy: %f' % avg_cat_accuracy)
+        printout(flog, 'Average IoU: %f' % avg_iou)
+        printout(flog, 'CategoryName, CategorySize, ClassificationAccuracy, SegmentationIoU')
+        for i in range(model.NUM_CATEGORY):
+            cat_accuracy[i] /= float(cat_obj[i])
+            cat_iou[i] /= float(cat_obj[i])
+            printout(flog, '\t%s (%d): %f, %f' % (category2name[i], cat_obj[i], cat_accuracy[i], cat_iou[i]))
 
 
 
