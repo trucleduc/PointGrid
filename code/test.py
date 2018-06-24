@@ -29,7 +29,7 @@ def get_file_name(file_path):
     parts = part.split('.')
     return parts[0]
 
-TESTING_FILE_LIST = [get_file_name(file_name) for file_name in glob.glob('../../data/ShapeNet/test/' + '*.mat')]
+TESTING_FILE_LIST = [get_file_name(file_name) for file_name in glob.glob('../data/ShapeNet/test/' + '*.mat')]
 
 category2name = ['Airplane', 'Bag', 'Cap', 'Car', 'Chair', 'Earphone', 'Guitar', 'Knife', 'Lamp', 'Laptop', 'Motorbike', 'Mug', 'Pistol', 'Rocket', 'Skateboard', 'Table']
 
@@ -177,12 +177,12 @@ def predict():
         if not load_checkpoint(ckpt_dir, sess):
             exit()
 
-        if not os.path.exists('../../data/ShapeNet/test-PointGrid'):
-            os.mkdir('../../data/ShapeNet/test-PointGrid')
+        if not os.path.exists('../data/ShapeNet/test-PointGrid'):
+            os.mkdir('../data/ShapeNet/test-PointGrid')
         
         num_obj_seen = np.zeros((model.NUM_CATEGORY), dtype=np.int32)
         for loop in range(len(TESTING_FILE_LIST)):
-            mat_content = scipy.io.loadmat('../../data/ShapeNet/test/' + TESTING_FILE_LIST[loop] + '.mat')
+            mat_content = scipy.io.loadmat('../data/ShapeNet/test/' + TESTING_FILE_LIST[loop] + '.mat')
             pc = mat_content['points']
             labels = mat_content['labels']
             category = mat_content['category'][0][0]
@@ -217,7 +217,7 @@ def predict():
                     if (pre_label[i] == 0 or len(set(L)) == 1):
                         point_label[i] = majority
 
-            output_color_point_cloud(pc, point_label, '../../data/ShapeNet/test-PointGrid/' + category2name[int(category)] + '_' + str(num_obj_seen[int(category)]) + '.obj')
+            output_color_point_cloud(pc, point_label, '../data/ShapeNet/test-PointGrid/' + category2name[int(category)] + '_' + str(num_obj_seen[int(category)]) + '.obj')
             printout(flog, '%d/%d %s' % ((loop+1), len(TESTING_FILE_LIST), TESTING_FILE_LIST[loop]))
             printout(flog, '----------')
 
