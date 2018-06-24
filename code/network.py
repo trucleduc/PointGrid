@@ -183,3 +183,13 @@ def get_loss(pred_label, one_hot_label, class_weight):
     seg_loss = tf.constant(1000.0, dtype=tf.float32) * tf.reduce_mean(per_instance_seg_loss)
     return seg_loss
 
+def intersection_over_union(pred_seg, integer_seg_label):
+    iou, counts = 0.0, 0.0
+    for i in range(1, NUM_SEG_PART):
+        intersection = np.sum(np.logical_and(pred_seg == i, integer_seg_label == i))
+        union = np.sum(np.logical_or(pred_seg == i, integer_seg_label == i))
+        if (union > 0):
+            counts += 1.0
+            iou += (float(intersection) / float(union))
+    iou /= counts
+    return iou
