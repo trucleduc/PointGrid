@@ -13,7 +13,7 @@
 ## Test:
 	python test.py
 
-If you find this code useful, please cite our work at
+If you find this code useful, please cite our work at\n
 @article{PointGrid,
 	author = {Truc Le and Ye Duan},
 	titile = {{PointGrid}: A Deep Network for 3D Shape Understanding},
