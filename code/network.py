@@ -101,6 +101,7 @@ def rotate_pc(pc):
     return rotated_pc
 
 
+
 def populateIntegerSegLabel(pc, voxel_label, index):
     # Args:
     #     pc: size n x F where n is the number of points and F is feature size
@@ -195,6 +196,8 @@ def get_loss(pred_label, one_hot_label, class_weight):
     per_instance_seg_loss = tf.nn.softmax_cross_entropy_with_logits(logits=pred_label, labels=one_hot_label)
     seg_loss = tf.constant(1000.0, dtype=tf.float32) * tf.reduce_mean(per_instance_seg_loss)
     return seg_loss
+
+
 
 def intersection_over_union(pred_seg, integer_seg_label):
     iou, counts = 0.0, 0.0
