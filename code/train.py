@@ -67,7 +67,7 @@ def integer_label_to_one_hot_label(integer_label):
         one_hot_label[i, integer_label[i]] = 1
     return one_hot_label
 
-def load_and_enqueue(sess, enqueue_op, pointgrid_ph, label_ph, class_weight_ph):
+def load_and_enqueue(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph):
     for epoch in range(1000 * TRAINING_EPOCHES):
         train_file_idx = np.arange(0, len(TRAINING_FILE_LIST))
         np.random.shuffle(train_file_idx)
@@ -76,16 +76,17 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, label_ph, class_weight_ph):
             pc = mat_content['points']
             labels = mat_content['labels']
             category = mat_content['category'][0][0]
-            one_hot_label = integer_label_to_one_hot_label(labels)
             pc = model.rotate_pc(pc)
-            pointgrid, label, _, class_weights = model.pc2voxel(pc, one_hot_label)
-            sess.run(enqueue_op, feed_dict={pointgrid_ph: pointgrid, label_ph: label, class_weight_ph: class_weights})
+            cat_label = model.integer_label_to_one_hot_label(category)
+            seg_label = integer_label_to_one_hot_label(labels)
+            pointgrid, pointgrid_label, _, class_weights = model.pc2voxel(pc, seg_label)
+            sess.run(enqueue_op, feed_dict={pointgrid_ph: pointgrid, cat_label_ph: cat_label, seg_label_ph: pointgrid_label})
 
 def placeholder_inputs():
     pointgrid_ph = tf.placeholder(tf.float32, shape=(model.N, model.N, model.N, model.NUM_FEATURES))
-    label_ph = tf.placeholder(tf.float32, shape=(model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART))
-    class_weight_ph = tf.placeholder(tf.float32, shape=(model.NUM_SEG_PART))
-    return pointgrid_ph, label_ph, class_weight_ph
+    cat_label_ph = tf.placeholder(tf.float32, shape=(model.NUM_CATEGORY))
+    seg_label_ph = tf.placeholder(tf.float32, shape=(model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART))
+    return pointgrid_ph, cat_label_ph, seg_label_ph
 
 def load_checkpoint(checkpoint_dir, session, var_list=None):
     print(' [*] Loading checkpoint...')
@@ -119,25 +120,25 @@ class StoppableThread(threading.Thread):
 def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(FLAGS.gpu)):
-            pointgrid_ph, label_ph, class_weight_ph = placeholder_inputs()
+            pointgrid_ph, cat_label_ph, seg_label_ph = placeholder_inputs()
             is_training_ph = tf.placeholder(tf.bool, shape=())
 
             queue = tf.FIFOQueue(capacity=20*batch_size, dtypes=[tf.float32, tf.float32, tf.float32],\
                                                          shapes=[[model.N, model.N, model.N, model.NUM_FEATURES],\
-                                                                 [model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART],\
-                                                                 [model.NUM_SEG_PART]])
-            enqueue_op = queue.enqueue([pointgrid_ph, label_ph, class_weight_ph])
-            dequeue_pointgrid, dequeue_label, dequeue_class_weight = queue.dequeue_many(batch_size)
+                                                                 [model.NUM_CATEGORY],
+                                                                 [model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART]])
+            enqueue_op = queue.enqueue([pointgrid_ph, cat_label_ph, seg_label_ph])
+            dequeue_pointgrid, dequeue_cat_label, dequeue_seg_label = queue.dequeue_many(batch_size)
 
             # model
-            pred_label = model.get_model(dequeue_pointgrid, is_training=is_training_ph)
+            pred_cat, pred_seg = model.get_model(dequeue_pointgrid, is_training=is_training_ph)
 
             # loss
-            loss = model.get_loss(pred_label, dequeue_label, dequeue_class_weight)
+            total_loss, cat_loss, seg_loss = model.get_loss(pred_cat, dequeue_cat_label, pred_seg, dequeue_seg_label)
 
             # optimization
             total_var = tf.trainable_variables()
-            step = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(loss, var_list=total_var)
+            step = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(total_loss, var_list=total_var)
 
         # write logs to the disk
         flog = open(os.path.join(LOG_STORAGE_PATH, 'log.txt'), 'w')
@@ -165,24 +166,32 @@ def train():
 
             num_data = len(TRAINING_FILE_LIST)
             num_batch = num_data // batch_size
-            loss_acc = 0.0
+            total_loss_acc = 0.0
+            cat_loss_acc = 0.0
+            seg_loss_acc = 0.0
             display_mark = num_batch // 4
             for i in range(num_batch):
-                _, loss_val = sess.run([step, loss], feed_dict={is_training_ph: is_training})
-                loss_acc += loss_val
+                _, total_loss_val, cat_loss_val, seg_loss_val = sess.run([step, total_loss, cat_loss, seg_loss], feed_dict={is_training_ph: is_training})
+                total_loss_acc += total_loss_val
+                cat_loss_acc += cat_loss_val
+                seg_loss_acc += seg_loss_val
 
                 if ((i+1) % display_mark == 0):
                     printout(flog, 'Epoch %d/%d - Iter %d/%d' % (epoch_num+1, TRAINING_EPOCHES, i+1, num_batch))
-                    printout(flog, 'Segmentation Loss: %f' % (loss_acc / (i+1)))
+                    printout(flog, 'Total Loss: %f' % (total_loss_acc / (i+1)))
+                    printout(flog, 'Classification Loss: %f' % (cat_loss_acc / (i+1)))
+                    printout(flog, 'Segmentation Loss: %f' % (seg_loss_acc / (i+1)))
 
-            printout(flog, '\tMean Segmentation Loss: %f' % (loss_acc / num_batch))
+            printout(flog, '\tMean Total Loss: %f' % (total_loss_acc / num_batch))
+            printout(flog, '\tMean Classification Loss: %f' % (cat_loss_acc / num_batch))
+            printout(flog, '\tMean Segmentation Loss: %f' % (seg_loss_acc / num_batch))
 
         if not os.path.exists(MODEL_STORAGE_PATH):
             os.mkdir(MODEL_STORAGE_PATH)
 
         coord = tf.train.Coordinator()
         for num_thread in range(16):
-            t = StoppableThread(target=load_and_enqueue, args=(sess, enqueue_op, pointgrid_ph, label_ph, class_weight_ph))
+            t = StoppableThread(target=load_and_enqueue, args=(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph))
             t.setDaemon(True)
             t.start()
             coord.register_thread(t)
