@@ -17,7 +17,7 @@ If you find this code useful, please cite our work at <br />
 <pre>
 @article{PointGrid,
 	author = {Truc Le and Ye Duan},
-	titile = {{PointGrid}: A Deep Network for 3D Shape Understanding},
+	titile = {{PointGrid: A Deep Network for 3D Shape Understanding}},
 	journal = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
 	month = {June},
 	year = {2018},
