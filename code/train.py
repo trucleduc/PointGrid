@@ -169,7 +169,7 @@ def train():
             total_loss_acc = 0.0
             cat_loss_acc = 0.0
             seg_loss_acc = 0.0
-            display_mark = num_batch // 4
+            display_mark = max([num_batch // 4, 1])
             for i in range(num_batch):
                 _, total_loss_val, cat_loss_val, seg_loss_val = sess.run([step, total_loss, cat_loss, seg_loss], feed_dict={is_training_ph: is_training})
                 total_loss_acc += total_loss_val
