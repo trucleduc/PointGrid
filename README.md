@@ -1,6 +1,6 @@
 # PointGrid: A Deep Network for 3D Shape Understanding
 
-Prerequisites:
+## Prerequisites:
 	Python (with necessary common libraries such as numpy, scipy, etc.)
 	TensorFlow
 	You need to prepare your data in *.mat file with the following format:
@@ -8,9 +8,9 @@ Prerequisites:
 		'labels': N x 1 array (1-based integer per-point labels)
 		'category': scalar (0-based integer model category)
 
-Train:
+## Train:
 	python train.py
-Test:
+## Test:
 	python test.py
 
 If you find this code useful, please cite our work at
