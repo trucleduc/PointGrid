@@ -1,5 +1,7 @@
 """ Wrapper functions for TensorFlow layers.
 
+Author: Truc D. Le
+Date: June 2018
 Author: Charles R. Qi
 Date: November 2016
 """
