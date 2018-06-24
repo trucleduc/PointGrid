@@ -192,8 +192,6 @@ def predict():
             category = mat_content['category'][0][0]
             cat_label = model.integer_label_to_one_hot_label(category)
             category = int(category)
-            if (cat_obj[category] >= 3):
-                continue
             cat_obj[category] += 1
             seg_label = integer_label_to_one_hot_label(labels)
             pointgrid, pointgrid_label, index, _ = model.pc2voxel(pc, seg_label)
@@ -230,8 +228,8 @@ def predict():
             iou = model.intersection_over_union(pred_point_label, labels)
             avg_iou += iou
             cat_iou[category] += iou
-
-            output_color_point_cloud(pc, pred_point_label, '../data/ShapeNet/test-PointGrid/' + category2name[category] + '_' + str(cat_obj[category]) + '.obj')
+            if (cat_obj[category] <= 3):
+                output_color_point_cloud(pc, pred_point_label, '../data/ShapeNet/test-PointGrid/' + category2name[category] + '_' + str(cat_obj[category]) + '.obj')
             printout(flog, '%d/%d %s' % ((loop+1), len(TESTING_FILE_LIST), TESTING_FILE_LIST[loop]))
             printout(flog, '----------')
 
