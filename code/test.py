@@ -198,6 +198,7 @@ def predict():
             seg_label = integer_label_to_one_hot_label(labels)
             pointgrid, pointgrid_label, index, _ = model.pc2voxel(pc, seg_label)
             pointgrid = np.expand_dims(pointgrid, axis=0)
+            cat_label = np.expand_dims(cat_label, axis=0)
             pointgrid_label = np.expand_dims(pointgrid_label, axis=0)
             feed_dict = {
                          pointgrid_ph: pointgrid,
