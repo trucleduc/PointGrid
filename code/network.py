@@ -88,6 +88,19 @@ def pc2voxel(pc, pc_label):
 
 
 
+def rotate_pc(pc):
+    # Args:
+    #     pc: size n x 3
+    # Returns:
+    #     rotated_pc: size n x 3
+    angle = np.random.uniform() * 2 * np.pi
+    cosval = np.cos(angle)
+    sinval = np.sin(angle)
+    rotation_matrix = np.array([[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]])
+    rotated_pc = np.dot(pc, rotation_matrix)
+    return rotated_pc
+
+
 def populateIntegerSegLabel(pc, voxel_label, index):
     # Args:
     #     pc: size n x F where n is the number of points and F is feature size
