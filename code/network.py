@@ -61,7 +61,7 @@ def pc2voxel(pc, pc_label):
               class_counts[0] += (K+1.0)
           elif (len(L[u]) >= K):
               choice = np.random.choice(L[u], size=K, replace=False)
-              data[i, j, k, :, :] = pc[choice, :]
+              data[i, j, k, :, :] = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
               label[i, j, k, 0 : K, :] = pc_label[choice, :]
               majority = np.argmax(np.sum(pc_label[L[u], :], axis=0))
               label[i, j, k, K, :] = 0
@@ -72,7 +72,7 @@ def pc2voxel(pc, pc_label):
               class_counts[majority] += 1.0
           else:
               choice = np.random.choice(L[u], size=K, replace=True)
-              data[i, j, k, :, :] = pc[choice, :]
+              data[i, j, k, :, :] = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
               label[i, j, k, 0 : K, :] = pc_label[choice, :]
               majority = np.argmax(np.sum(pc_label[L[u], :], axis=0))
               label[i, j, k, K, :] = 0
