@@ -43,7 +43,7 @@ def get_file_name(file_path):
     parts = part.split('.')
     return parts[0]
 
-TRAINING_FILE_LIST = [get_file_name(file_name) for file_name in glob.glob('../../data/ShapeNet/train/' + '*.mat')]
+TRAINING_FILE_LIST = [get_file_name(file_name) for file_name in glob.glob('../data/ShapeNet/train/' + '*.mat')]
 
 MODEL_STORAGE_PATH = os.path.join(output_dir, 'trained_models')
 if not os.path.exists(MODEL_STORAGE_PATH):
@@ -72,7 +72,7 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, label_ph, class_weight_ph):
         train_file_idx = np.arange(0, len(TRAINING_FILE_LIST))
         np.random.shuffle(train_file_idx)
         for loop in range(len(TRAINING_FILE_LIST)):
-            mat_content = scipy.io.loadmat('../../data/ShapeNet/train/' + TRAINING_FILE_LIST[train_file_idx[loop]] + '.mat')
+            mat_content = scipy.io.loadmat('../data/ShapeNet/train/' + TRAINING_FILE_LIST[train_file_idx[loop]] + '.mat')
             pc = mat_content['points']
             labels = mat_content['labels']
             category = mat_content['category'][0][0]
