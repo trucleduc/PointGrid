@@ -77,6 +77,7 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, label_ph, class_weight_ph):
             labels = mat_content['labels']
             category = mat_content['category'][0][0]
             one_hot_label = integer_label_to_one_hot_label(labels)
+            pc = model.rotate_pc(pc)
             pointgrid, label, _, class_weights = model.pc2voxel(pc, one_hot_label)
             sess.run(enqueue_op, feed_dict={pointgrid_ph: pointgrid, label_ph: label, class_weight_ph: class_weights})
 
