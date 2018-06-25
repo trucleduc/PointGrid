@@ -17,7 +17,7 @@ K = 4
 NUM_CATEGORY = 16
 NUM_SEG_PART = 50+1
 NUM_PER_POINT_FEATURES = 3
-NUM_FEATURES = K * NUM_PER_POINT_FEATURES
+NUM_FEATURES = K * NUM_PER_POINT_FEATURES + 1
 
 batch_norm = partial(slim.batch_norm, decay=0.9, scale=True, epsilon=1e-5, scope='bn', updates_collections=None)
 
@@ -54,7 +54,7 @@ def pc2voxel(pc, pc_label):
     #     class_weights: NUM_SEG_PART
 
     num_points = pc.shape[0]
-    data = np.zeros((N, N, N, K, NUM_PER_POINT_FEATURES), dtype=np.float32)
+    data = np.zeros((N, N, N, NUM_FEATURES), dtype=np.float32)
     label = np.zeros((N, N, N, K+1, NUM_SEG_PART), dtype=np.float32)
     index = np.zeros((N, N, N, K), dtype=np.float32)
     class_counts = np.ones((NUM_SEG_PART), dtype=np.float32)
@@ -72,13 +72,15 @@ def pc2voxel(pc, pc_label):
         for k in range(N):
           u = int(i * N * N + j * N + k)
           if not L[u]:
-              data[i, j, k, :, :] = np.zeros((K, NUM_PER_POINT_FEATURES))
+              data[i, j, k, :] = np.zeros((NUM_FEATURES), dtype=np.float32)
               label[i, j, k, :, :] = 0
               label[i, j, k, :, 0] = 1
               class_counts[0] += (K+1.0)
           elif (len(L[u]) >= K):
               choice = np.random.choice(L[u], size=K, replace=False)
-              data[i, j, k, :, :] = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
+              local_points = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
+              data[i, j, k, 0 : K * NUM_PER_POINT_FEATURES] = np.reshape(local_points, (K * NUM_PER_POINT_FEATURES))
+              data[i, j, k, K * NUM_PER_POINT_FEATURES] = 1.0
               label[i, j, k, 0 : K, :] = pc_label[choice, :]
               majority = np.argmax(np.sum(pc_label[L[u], :], axis=0))
               label[i, j, k, K, :] = 0
@@ -89,7 +91,9 @@ def pc2voxel(pc, pc_label):
               class_counts[majority] += 1.0
           else:
               choice = np.random.choice(L[u], size=K, replace=True)
-              data[i, j, k, :, :] = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
+              local_points = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
+              data[i, j, k, 0 : K * NUM_PER_POINT_FEATURES] = np.reshape(local_points, (K * NUM_PER_POINT_FEATURES))
+              data[i, j, k, K * NUM_PER_POINT_FEATURES] = 1.0
               label[i, j, k, 0 : K, :] = pc_label[choice, :]
               majority = np.argmax(np.sum(pc_label[L[u], :], axis=0))
               label[i, j, k, K, :] = 0
@@ -98,7 +102,6 @@ def pc2voxel(pc, pc_label):
               for s in range(K):
                   class_counts[np.argmax(pc_label[choice[s], :])] += 1.0
               class_counts[majority] += 1.0
-    data = np.reshape(data, (N, N, N, K * NUM_PER_POINT_FEATURES))
     class_weights = np.sum(class_counts) / class_counts
     class_weights = class_weights / np.sum(class_weights)
     return data, label, index, class_weights
