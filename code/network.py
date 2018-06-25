@@ -51,13 +51,11 @@ def pc2voxel(pc, pc_label):
     #     voxel: N x N x N x K x (3+3)
     #     label: N x N x N x (K+1) x NUM_SEG_PART
     #     index: N x N x N x K
-    #     class_weights: NUM_SEG_PART
 
     num_points = pc.shape[0]
     data = np.zeros((N, N, N, NUM_FEATURES), dtype=np.float32)
     label = np.zeros((N, N, N, K+1, NUM_SEG_PART), dtype=np.float32)
     index = np.zeros((N, N, N, K), dtype=np.float32)
-    class_counts = np.ones((NUM_SEG_PART), dtype=np.float32)
     xyz = pc[:, 0 : 3]
     centroid = np.mean(xyz, axis=0, keepdims=True)
     xyz -= centroid
@@ -75,7 +73,6 @@ def pc2voxel(pc, pc_label):
               data[i, j, k, :] = np.zeros((NUM_FEATURES), dtype=np.float32)
               label[i, j, k, :, :] = 0
               label[i, j, k, :, 0] = 1
-              class_counts[0] += (K+1.0)
           elif (len(L[u]) >= K):
               choice = np.random.choice(L[u], size=K, replace=False)
               local_points = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
@@ -86,9 +83,6 @@ def pc2voxel(pc, pc_label):
               label[i, j, k, K, :] = 0
               label[i, j, k, K, majority] = 1
               index[i, j, k, :] = choice
-              for s in range(K):
-                  class_counts[np.argmax(pc_label[choice[s], :])] += 1.0
-              class_counts[majority] += 1.0
           else:
               choice = np.random.choice(L[u], size=K, replace=True)
               local_points = pc[choice, :] - np.array([-1.0 + (i + 0.5) * 2.0 / N, -1.0 + (j + 0.5) * 2.0 / N, -1.0 + (k + 0.5) * 2.0 / N], dtype=np.float32)
@@ -99,12 +93,7 @@ def pc2voxel(pc, pc_label):
               label[i, j, k, K, :] = 0
               label[i, j, k, K, majority] = 1
               index[i, j, k, :] = choice
-              for s in range(K):
-                  class_counts[np.argmax(pc_label[choice[s], :])] += 1.0
-              class_counts[majority] += 1.0
-    class_weights = np.sum(class_counts) / class_counts
-    class_weights = class_weights / np.sum(class_weights)
-    return data, label, index, class_weights
+    return data, label, index
 
 
 
