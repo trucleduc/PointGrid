@@ -13,7 +13,7 @@ sys.path.append(os.path.join(BASE_DIR, './utils'))
 import tf_util
 
 N = 16
-K = 16
+K = 4
 NUM_CATEGORY = 16
 NUM_SEG_PART = 50+1
 NUM_PER_POINT_FEATURES = 3
