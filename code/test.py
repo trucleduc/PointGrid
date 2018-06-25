@@ -22,6 +22,8 @@ output_dir = os.path.join(BASE_DIR, './test_results')
 
 # MAIN SCRIPT
 batch_size = 1               # DO NOT CHANGE
+purify = True                # Reassign label based on k-nearest neighbor
+knn = 5                      # for the purify
 
 def get_file_name(file_path):
     parts = file_path.split('/')
@@ -160,8 +162,6 @@ def predict():
             avg_cat_accuracy += (pred_cat_val == category)
             cat_accuracy[category] += (pred_cat_val == category)
             pred_point_label = model.populateOneHotSegLabel(pc, pred_seg_val, index)
-            purify = True
-            knn = 5
             if purify == True:
                 pre_label = pred_point_label
                 for i in range(pc.shape[0]):
