@@ -12,8 +12,8 @@ sys.path.append(os.path.dirname(BASE_DIR))
 sys.path.append(os.path.join(BASE_DIR, './utils'))
 import tf_util
 
-N = 16
-K = 4
+N = 16 # grid size is N x N x N
+K = 4 # each cell has K points
 NUM_CATEGORY = 16
 NUM_SEG_PART = 50+1
 NUM_PER_POINT_FEATURES = 3
