@@ -22,7 +22,7 @@ output_dir = os.path.join(BASE_DIR, './test_results')
 
 # MAIN SCRIPT
 batch_size = 1               # DO NOT CHANGE
-purify = True                # Reassign label based on k-nearest neighbor
+purify = True                # Reassign label based on k-nearest neighbor. Set to False for large point cloud due to slow speed
 knn = 5                      # for the purify
 
 def get_file_name(file_path):
