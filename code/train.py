@@ -79,7 +79,7 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph)
             pc = model.rotate_pc(pc)
             cat_label = model.integer_label_to_one_hot_label(category)
             seg_label = integer_label_to_one_hot_label(labels)
-            pointgrid, pointgrid_label, _, class_weights = model.pc2voxel(pc, seg_label)
+            pointgrid, pointgrid_label, _ = model.pc2voxel(pc, seg_label)
             sess.run(enqueue_op, feed_dict={pointgrid_ph: pointgrid, cat_label_ph: cat_label, seg_label_ph: pointgrid_label})
 
 def placeholder_inputs():
