@@ -74,12 +74,6 @@ def placeholder_inputs():
     seg_label_ph = tf.placeholder(tf.float32, shape=(batch_size, model.N, model.N, model.N, model.K+1, model.NUM_SEG_PART))
     return pointgrid_ph, cat_label_ph, seg_label_ph
 
-def integer_label_to_one_hot_label(integer_label):
-    one_hot_label = np.zeros((integer_label.shape[0], model.NUM_SEG_PART))
-    for i in range(integer_label.shape[0]):
-        one_hot_label[i, integer_label[i]] = 1
-    return one_hot_label
-
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -145,7 +139,7 @@ def predict():
             cat_label = model.integer_label_to_one_hot_label(category)
             category = int(category)
             cat_obj[category] += 1
-            seg_label = integer_label_to_one_hot_label(labels)
+            seg_label = model.integer_label_to_one_hot_label(labels)
             pointgrid, pointgrid_label, index = model.pc2voxel(pc, seg_label)
             pointgrid = np.expand_dims(pointgrid, axis=0)
             cat_label = np.expand_dims(cat_label, axis=0)
