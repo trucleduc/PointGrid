@@ -61,12 +61,6 @@ def printout(flog, data):
     print(data)
     flog.write(data + '\n')
 
-def integer_label_to_one_hot_label(integer_label):
-    one_hot_label = np.zeros((integer_label.shape[0], model.NUM_SEG_PART))
-    for i in range(integer_label.shape[0]):
-        one_hot_label[i, integer_label[i]] = 1
-    return one_hot_label
-
 def load_and_enqueue(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph):
     for epoch in range(1000 * TRAINING_EPOCHES):
         train_file_idx = np.arange(0, len(TRAINING_FILE_LIST))
@@ -78,7 +72,7 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph)
             category = mat_content['category'][0][0]
             pc = model.rotate_pc(pc)
             cat_label = model.integer_label_to_one_hot_label(category)
-            seg_label = integer_label_to_one_hot_label(labels)
+            seg_label = model.integer_label_to_one_hot_label(labels)
             pointgrid, pointgrid_label, _ = model.pc2voxel(pc, seg_label)
             sess.run(enqueue_op, feed_dict={pointgrid_ph: pointgrid, cat_label_ph: cat_label, seg_label_ph: pointgrid_label})
 
