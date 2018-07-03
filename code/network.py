@@ -30,6 +30,10 @@ def integer_label_to_one_hot_label(integer_label):
     if (len(integer_label.shape) == 0):
         one_hot_label = np.zeros((NUM_CATEGORY))
         one_hot_label[integer_label] = 1
+    elif (len(integer_label.shape) == 1):
+        one_hot_label = np.zeros((integer_label.shape[0], model.NUM_SEG_PART))
+        for i in range(integer_label.shape[0]):
+            one_hot_label[i, integer_label[i]] = 1
     elif (len(integer_label.shape) == 4):
         one_hot_label = np.zeros((N, N, N, K, NUM_SEG_PART))
         for i in range(N):
@@ -38,7 +42,7 @@ def integer_label_to_one_hot_label(integer_label):
               for l in range(K):
                 one_hot_label[i, j, k, l, integer_label[i, j, k, l]] = 1
     else:
-        one_hot_label = np.ones((1))
+        raise
     return one_hot_label
 
 
