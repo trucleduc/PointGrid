@@ -134,7 +134,7 @@ def predict():
         for loop in range(len(TESTING_FILE_LIST)):
             mat_content = scipy.io.loadmat('../data/ShapeNet/test/' + TESTING_FILE_LIST[loop] + '.mat')
             pc = mat_content['points']
-            labels = mat_content['labels']
+            labels = np.squeeze(mat_content['labels'])
             category = mat_content['category'][0][0]
             cat_label = model.integer_label_to_one_hot_label(category)
             category = int(category)
