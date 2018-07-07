@@ -68,7 +68,7 @@ def load_and_enqueue(sess, enqueue_op, pointgrid_ph, cat_label_ph, seg_label_ph)
         for loop in range(len(TRAINING_FILE_LIST)):
             mat_content = scipy.io.loadmat('../data/ShapeNet/train/' + TRAINING_FILE_LIST[train_file_idx[loop]] + '.mat')
             pc = mat_content['points']
-            labels = mat_content['labels']
+            labels = np.squeeze(mat_content['labels'])
             category = mat_content['category'][0][0]
             pc = model.rotate_pc(pc)
             cat_label = model.integer_label_to_one_hot_label(category)
