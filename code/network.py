@@ -215,15 +215,15 @@ def get_model(pointgrid, is_training):
 
 def get_loss(pred_cat, one_hot_cat, pred_seg, one_hot_seg):
     per_instance_cat_loss = tf.nn.softmax_cross_entropy_with_logits(logits=pred_cat, labels=one_hot_cat)
-    cat_loss = tf.constant(1000.0, dtype=tf.float32) * tf.reduce_mean(per_instance_cat_loss)
+    cat_loss = tf.constant(200.0, dtype=tf.float32) * tf.reduce_mean(per_instance_cat_loss)
     per_instance_seg_loss = tf.nn.softmax_cross_entropy_with_logits(logits=pred_seg, labels=one_hot_seg)
-    seg_loss = tf.constant(1000.0, dtype=tf.float32) * tf.reduce_mean(per_instance_seg_loss)
+    seg_loss = tf.constant(800.0, dtype=tf.float32) * tf.reduce_mean(per_instance_seg_loss)
     total_var = tf.trainable_variables()
     reg_vars = [var for var in total_var if 'weights' in var.name]
     reg_loss = tf.zeros([], dtype=tf.float32)
     for var in reg_vars:
         reg_loss += tf.nn.l2_loss(var)
-    reg_loss = tf.constant(0.01, dtype=tf.float32) * reg_loss
+    reg_loss = tf.constant(1e-5, dtype=tf.float32) * reg_loss
     total_loss = cat_loss + seg_loss + reg_loss
     return total_loss, cat_loss, seg_loss
 
